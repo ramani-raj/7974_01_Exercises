@@ -176,8 +176,7 @@ def report2(df):
 
 def report3(df):
     df['bins']=pd.qcut(df['volume'],q=4)
-    cross=pd.crosstab(index=df['bins'],columns=pd.cut(df['volume'],bins=4).cat.codes).apply(lambda x : round(x/len(df)*100,2),axis=1)
-    cross.columns=pd.cut(df['volume'],bins=4).cat.categories
+    cross=pd.crosstab(df.bins, df.cut, normalize="all").round(4)*100
     return cross
 
 
