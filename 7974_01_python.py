@@ -182,6 +182,18 @@ def report3(df):
 
 
 #Bonus Question
+#Q4
+def report4(df): 
+    df1=df.groupby('title_year')['gross'].sum().reset_index()
+    df1['gross_10']=df1['gross']*0.1
+    df1.drop(columns=['gross'],inplace=True)
+    df=pd.merge(df,df1,how='inner',on='title_year')
+    df=df[df['gross'] > df['gross_10']].reset_index()
+    df2=df.groupby('title_year')['imdb_score'].mean().reset_index()
+    df2.rename(columns={'imdb_score':'avg_imdb_score_top_10_movies'},inplace=True)
+    return df2
+
+#Bonus Question
 #Q5
 def report5(df):
     df['deciles']=pd.qcut(df['duration'],10,labels=False)
