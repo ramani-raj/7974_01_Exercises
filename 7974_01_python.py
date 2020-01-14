@@ -82,9 +82,10 @@ def sort_df(df):
     return sort
 
 # Q10 subset revenue more than 2 million and spent less than 1 million & duration between 30 mintues to 180 minutes
-def subset_df(df):
+def subset_df():
 	# write code here
-    subset=df[(df['duration']>30) & (df['duration']<180)]
+    df= pd.read_csv("movie_metadata.csv")
+    subset=df[(df['duration']>30) & (df['duration']<180) & (df['gross']>2000000) & (df['budget']<1000000)]
     return subset
 
 #To read diamond data set
@@ -229,7 +230,7 @@ def report6():
     plt.tight_layout()
     plt.show()
     
-    df.groupby('type')['nrOfWins','nrOfNominations'].sum().plot(kind='Bar',title='Type Visualization')
+    df.groupby('type')['nrOfWins','nrOfNominations'].sum().plot(kind='bar',title='Type Visualization')
 
     plt.tight_layout()
     plt.show()
