@@ -191,7 +191,13 @@ def report4(df):
     df=df[df['gross'] > df['gross_10']].reset_index()
     df2=df.groupby('title_year')['imdb_score'].mean().reset_index()
     df2.rename(columns={'imdb_score':'avg_imdb_score_top_10_movies'},inplace=True)
-    return df2
+    
+    df.genres=df.genres.str.split('|')
+    New_df=pd.DataFrame({'genres':np.concatenate(df.genres.values),'movie_title':df.movie_title.repeat(df.genres.apply(len))})
+    New_df=New_df.groupby('genres').count()
+    New_df.rename(columns={'movie_title':'Top_movies_count'},inplace=True)
+    
+    return df2,New_df
 
 #Bonus Question
 #Q5
