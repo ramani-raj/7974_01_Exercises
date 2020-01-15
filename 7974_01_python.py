@@ -7,12 +7,15 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-sns.set(style="darkgrid")
-%matplotlib inline
 
+# To read the 'SaleData'
 df = pd.read_excel("SaleData.xlsx")
+
+# To read the 'imdb.csv'
+df= pd.read_csv("imdb.csv",escapechar="\\")
+
+#To read 'diamonds.csv'
+df = pd.read_csv("diamonds.csv")
 
 # Q1 Find least sales amount for each item
 def least_sales(df):
@@ -29,11 +32,11 @@ def sales_year_region(df):
     return sal
 
 # Q3 append column with no of days difference from present date to each order date
-def days_diff(df):
+def days_diff(df,date):
     # write code to return pandas dataframe
     mod_df=df.copy()
     dateFormat="%Y-%m-%d"
-    t=datetime.strptime(str(datetime.today().strftime(dateFormat)),dateFormat)
+    t=datetime.strptime(str(date),dateFormat)
     mod_df['days_diff']=mod_df['OrderDate'].apply(lambda x : (t-x).days)
     return mod_df
 
@@ -46,21 +49,20 @@ def mgr_slsmn(df):
     return grouped_df
 
 
-# Q5 For all regions find number of salesman and number of units
+# Q5 For all regions find number of salesman and total sales
 def slsmn_units(df):
     # write code to return pandas dataframe
-    slsmn=df.groupby('Region').agg({'SalesMan':'count','Units':'sum'}).reset_index().rename(columns={'SalesMan':'salesman_count','Units':'total_sales'})
+    slsmn=df.groupby('Region').agg({'SalesMan':'count','Sale_amt':'sum'}).reset_index().rename(columns={'SalesMan':'salesman_count','Sale_amt':'total_sales'})
     return slsmn
 
 # Q6 Find total sales as percentage for each manager
 def sales_pct(df):
     # write code to return pandas dataframe
     total_sales=df.groupby('Manager').agg({'Sale_amt':'sum'}).rename(columns={'Sale_amt':'percent_sales'})
-    total_sales=round(total_sales/total_sales.sum()*100,2)
+    total_sales=total_sales/total_sales.sum()*100
     return total_sales
 
-# To read the 'imdb.csv'
-df= pd.read_csv("imdb.csv",escapechar="\\")
+
 
 # Q7 get imdb rating for fifth movie of dataframe
 def fifth_movie(df):
@@ -82,15 +84,12 @@ def sort_df(df):
     return sort
 
 # Q10 subset revenue more than 2 million and spent less than 1 million & duration between 30 mintues to 180 minutes
-def subset_df():
+def subset_df(df):
 	# write code here
-    df= pd.read_csv("movie_metadata.csv")
     subset=df[(df['duration']>30) & (df['duration']<180) & (df['gross']>2000000) & (df['budget']<1000000)]
     return subset
 
-#To read diamond data set
 
-df = pd.read_csv("diamonds.csv")
 
 # Q11 count the duplicate rows of diamonds DataFrame.
 def dupl_rows(df):
@@ -128,7 +127,7 @@ def calc(row):
             x=pd.to_numeric(row['x'],errors='coerce')
             y=pd.to_numeric(row['y'],errors='coerce')
             z=pd.to_numeric(row['z'],errors='coerce')
-            return round(x*y*z,3)
+            return x*y*z
         
 
 # Q15 impute missing price values with mean
@@ -140,7 +139,8 @@ def impute(df):
 #Q1
 def report1(df):
     df1 = df.groupby('year').sum()
-    df1.drop(df1.iloc[:, 0:9],axis=1,inplace=True)
+    df1.drop(columns={'imdbRating', 'ratingCount', 'duration', 'nrOfWins', 'nrOfNominations',
+       'nrOfPhotos', 'nrOfNewsArticles', 'nrOfUserReviews', 'nrOfGenre'},inplace=True)
     df1['genre_combo'] = df1.apply(lambda x: '|'.join(x.index[x>= 1]), axis=1)
     res1=df.groupby(['year','type'])['imdbRating'].agg([('avg_rating','mean'),('min_rating','min'),('max_rating','max')])
     res2=df.groupby(['year','type'])['duration'].agg([('total_run_time_mins','sum')])
@@ -155,7 +155,7 @@ def report1(df):
 def report2(df):
     df1=df.copy()
 
-    df1['title_len']=df1['title'].str.len()
+    df1['title_len']=df1['wordsInTitle'].str.len()
     df2=df1.groupby('year')['title_len'].agg([('min_length','min'),('max_length','max')])
     df3=df1.groupby('year')['title_len'].describe(percentiles=[0.25,0.5,0.75]).drop(['count','mean','std','min','max'],axis=1).reset_index()
     df4= pd.merge(df2,df3,on='year')
@@ -176,27 +176,22 @@ def report2(df):
 
 def report3(df):
     df['bins']=pd.qcut(df['volume'],q=4)
-    cross=pd.crosstab(df.bins, df.cut, normalize="all").round(4)*100
+    cross=pd.crosstab(df.bins, df.cut, normalize="all")*100
     return cross
-
 
 #Bonus Question
 #Q4
 def report4(df): 
-    df1=df.groupby('title_year')['gross'].sum().reset_index()
-    df1['gross_10']=df1['gross']*0.1
-    df1.drop(columns=['gross'],inplace=True)
-    df=pd.merge(df,df1,how='inner',on='title_year')
-    df=df[df['gross'] > df['gross_10']].reset_index()
-    df2=df.groupby('title_year')['imdb_score'].mean().reset_index()
-    df2.rename(columns={'imdb_score':'avg_imdb_score_top_10_movies'},inplace=True)
+    grp=(df.groupby('title_year',group_keys=False).apply(lambda x: x.nlargest(int(len(x)*0.1),'gross'))).reset_index()
+    df1=grp.groupby('title_year')['imdb_score'].mean().reset_index()
+    df1.rename(columns={'imdb_score':'Avg_imdb_score'},inplace=True)
     
-    df.genres=df.genres.str.split('|')
-    New_df=pd.DataFrame({'genres':np.concatenate(df.genres.values),'movie_title':df.movie_title.repeat(df.genres.apply(len))})
-    New_df=New_df.groupby('genres').count()
-    New_df.rename(columns={'movie_title':'Top_movies_count'},inplace=True)
+    new_df=grp.genres.str.get_dummies('|')
+    mer=pd.merge(grp.title_year,new_df,on=None,left_index=True,right_index=True)
+    mer=mer.groupby('title_year').sum()
+    res=pd.merge(df1,mer,on='title_year')
     
-    return df2,New_df
+    return res
 
 #Bonus Question
 #Q5
@@ -221,37 +216,10 @@ def report5(df):
     for n in [1,2,3]:
         df1["top{}".format(n)] = df1[cols].apply(lambda x: cols[get_n_largest_ind(x,n)],axis=1)
 
-    df1=df1.drop(df1.iloc[:, 2:30],axis=1)
+    df1.drop(columns={'Action', 'Adult', 'Adventure',
+       'Animation', 'Biography', 'Comedy', 'Crime', 'Documentary', 'Drama',
+       'Family', 'Fantasy', 'FilmNoir', 'GameShow', 'History', 'Horror',
+       'Music', 'Musical', 'Mystery', 'News', 'RealityTV', 'Romance', 'SciFi',
+       'Short', 'Sport', 'TalkShow', 'Thriller', 'War', 'Western'},inplace=True)
     df1.columns=(['nrOfWins','nrOfNominations','count','top1','top2','top3'])
     return df1
-
-#Bonus Question
-#Q6
-def report6():
-    df= pd.read_csv("movie_metadata.csv")
-    df[['content_rating','movie_title']].groupby('content_rating').count().plot(kind='bar', title='Content Rating Plot')
-    plt.xlabel('Content Rating')
-    plt.ylabel('Title Count')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    #Top 5 directors with most movies
-    df['director_name'].value_counts()[:5].sort_values(ascending=False)
-    
-    df= pd.read_csv("imdb.csv",escapechar="\\")
-    
-    df.groupby('type')['title'].count().plot(kind='pie',title='Type Visualization',autopct='%1.1f%%')
-    plt.axis('equal')
-
-    plt.tight_layout()
-    plt.show()
-    
-    df.groupby('type')['nrOfWins','nrOfNominations'].sum().plot(kind='bar',title='Type Visualization')
-
-    plt.tight_layout()
-    plt.show()
-    return
-
-    
-    
