@@ -12,21 +12,21 @@ df <- read_excel("SaleData.xlsx")
 df <- read.csv("diamonds.csv")
 
 # To read the 'imdb.csv'
-df <- read.csv("imdb.csv",as.is=T)
+df <- read.csv(text=gsub("\\\\,","-",readLines("imdb.csv")))
 
 # To read the 'movie_metadata.csv'
 df <- read.csv("movie_metadata.csv")
 
 # Q1  Find the least amount sale that was done for each item. 
 least_sales <- function(df){
-  ls <- df %>% group_by(Item) %>% summarise(min_sale=min(Sale_amt))
+  ls <- df %>% group_by(Item) %>% summarise(min_sale=min(Sale_amt,na.rm = T))
   return(ls)
 }
 
 
 #Q2 Compute the total sales for each year and region across all items
 sales_year_region  <-function(df){
-  ts <- df %>% group_by(Year=as.numeric(format(OrderDate,'%Y')),Region) %>% summarise(Total_Sales=sum(Sale_amt))
+  ts <- df %>% group_by(Year=as.numeric(format(OrderDate,'%Y')),Region) %>% summarise(Total_Sales=sum(Sale_amt,na.rm = T))
   return(ts)
 }
 
@@ -47,7 +47,7 @@ mgr_slsmn <- function(df){
 
 #Q5 For all regions find number of salesman and total sales. Return as a dataframe with three columns Region, salesmen_count and total_sales 
 slsmn_units <-function(df){
-  rf <- df %>% group_by(Region) %>% summarise(salesmen_count=n(),total_sales=sum(Sale_amt))
+  rf <- df %>% group_by(Region) %>% summarise(salesmen_count=n(),total_sales=sum(Sale_amt,na.rm=T))
   return(rf) 
 }
 
@@ -70,14 +70,13 @@ fifth_movie <- function(df){
 # Q8 return titles of movies with shortest and longest run time
 movies <- function(df){
   df1 <-df %>% group_by(type) %>% filter(type=="video.movie")
-  res <-df1[which.max(df1$duration),]$title
-  res <-append(res,df1[which.min(df1$duration),]$title)
+  res <-df1  %>% filter(duration == min(duration,na.rm=TRUE) ) %>% select(title)
+  res <-rbind(res,df1  %>% filter(duration == max(duration,na.rm=TRUE) ) %>% select(title))
   return (res)
 }
 
 # Q9 sort by two columns - release_date (earliest) and Imdb rating(highest to lowest)
 sort_df <- function(df){
-  df <- na.omit(df)
   res <- df[order(df$year,rev(df$imdbRating)),]
   return (res)
 }
