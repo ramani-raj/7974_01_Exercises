@@ -17,6 +17,9 @@ df= pd.read_csv("imdb.csv",escapechar="\\")
 #To read 'diamonds.csv'
 df = pd.read_csv("diamonds.csv")
 
+#To read 'movie_metadata.csv'
+df = pd.read_csv("movie_metadata.csv")
+
 # Q1 Find least sales amount for each item
 def least_sales(df):
     # write code to return pandas dataframe
@@ -154,7 +157,11 @@ def report1(df):
 
 def report2(df):
     df1=df.copy()
-
+    #no relation
+    df['title_len']=df['wordsInTitle'].str.len()
+    df['title_len'].corr(df['imdbRating'])
+    
+    #crosstab
     df1['title_len']=df1['wordsInTitle'].str.len()
     df2=df1.groupby('year')['title_len'].agg([('min_length','min'),('max_length','max')])
     df3=df1.groupby('year')['title_len'].describe(percentiles=[0.25,0.5,0.75]).drop(['count','mean','std','min','max'],axis=1).reset_index()
