@@ -4,7 +4,14 @@
 
 library(readxl)
 library(dplyr)
-
+library(readr)
+library(stringr)
+library(binr)
+library(assertr)
+library(mltools)
+library(lubridate)
+library(imputeTS)
+library(descr)
 #To read 'SaleData.xlsx'
 df <- read_excel("SaleData.xlsx")
 
@@ -12,7 +19,7 @@ df <- read_excel("SaleData.xlsx")
 df <- read.csv("diamonds.csv")
 
 # To read the 'imdb.csv'
-df <- read.csv(text=gsub("\\\\,","-",readLines("imdb.csv")))
+df<-read_delim("imdb.csv", delim=',', escape_double=FALSE, escape_backslash=TRUE)
 
 # To read the 'movie_metadata.csv'
 df <- read.csv("movie_metadata.csv")
@@ -77,7 +84,7 @@ movies <- function(df){
 
 # Q9 sort by two columns - release_date (earliest) and Imdb rating(highest to lowest)
 sort_df <- function(df){
-  res <- df[order(df$year,rev(df$imdbRating)),]
+  res <- arrange(df,year,desc(imdbRating))
   return (res)
 }
 
@@ -122,4 +129,36 @@ volume <- function(df){
 impute <- function(df){
   df <- df %>% mutate_at(vars(price),~ifelse(is.na(.x),mean(.x,na.rm = TRUE),.x))
   return(df)
+}
+
+
+#Bonus1
+report1 <- function(df){
+  df1 <- df %>% select(17:44)
+  df['genre_combo'] <- apply(df1, 1, function(x) paste(names(x[x>=1]), collapse="|"))
+  df1 <- df %>% group_by(year,type,genre_combo) %>% summarise(avg_rating=mean(imdbRating),min_rating=min(imdbRating),max_rating=max(imdbRating),total_run_time_mins=sum(duration))
+  return(df1)
+}
+
+#Bonus2
+report2 <- function(df){
+  df <- na_mean(df)
+  df$title_len <-nchar(df$wordsInTitle)
+  df$percentile<-bin_data(df$duration,bins=4,binType = "quantile")
+  df[is.na(df$wordsInTitle),"len"]=nchar(as.character(unlist(df[is.na(df$wordsInTitle),"title"])))
+  res<-as.data.frame.matrix(table(df$year,df$percentile))
+  colnames(res)<-c("num_videos_less_than25Percentile","num_videos_25_50Percentile ","num_videos_50_75Percentile","num_videos_greaterthan75Precentile")
+  res2<-df%>%group_by(year)%>%summarise(min_len=min(title_len),max_len=max(title_len))
+  return(cbind(res,res2))
+}
+
+#Bonus3
+report3<- function(df){
+  df$z <- as.numeric(df$z)
+  df <- cbind(df,vol= ifelse( df$depth < 60 , 8 , df$x*df$y*df$z))
+  cut=bin_data(df$vol,bins=4)
+  df['bins']=as.numeric(cut)
+  df=na.omit(df)
+  res<-crosstab(df$bins,df$cut,prop.t=TRUE)
+  return(res)
 }
